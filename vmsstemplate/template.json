@@ -4,15 +4,14 @@
   "parameters": {
     "vmSize": {
       "type": "string",
-      "defaultValue": "Standard_A1",
+      "defaultValue": "Standard_DS2_v2",
       "minLength": 1
     },
     "ubuntuOSVersion": {
       "type": "string",
-      "defaultValue": "14.04.4-LTS",
+      "defaultValue": "14.04.5-LTS",
       "allowedValues": [
-        "15.10",
-        "14.04.4-LTS"
+        "14.04.5-LTS"
       ],
       "metadata": {
         "description": "The Ubuntu version for the VM. This will pick a fully patched image of this given Ubuntu version. Allowed values are: 15.10, 14.04.4-LTS."
@@ -50,23 +49,12 @@
   },
   "variables": {
     "location": "[resourceGroup().location]",
-    "storageAccountType": "Standard_LRS",
     "namingInfix": "[toLower(substring(concat(parameters('vmssName'), uniqueString(resourceGroup().id)), 0, 9))]",
     "longNamingInfix": "[toLower(parameters('vmssName'))]",
-    "newStorageAccountSuffix": "[concat(variables('namingInfix'), 'sa')]",
-    "uniqueStringArray": [
-      "[concat(uniqueString(concat(resourceGroup().id, variables('newStorageAccountSuffix'), '0')), variables('newStorageAccountSuffix'))]",
-      "[concat(uniqueString(concat(resourceGroup().id, variables('newStorageAccountSuffix'), '1')), variables('newStorageAccountSuffix'))]",
-      "[concat(uniqueString(concat(resourceGroup().id, variables('newStorageAccountSuffix'), '2')), variables('newStorageAccountSuffix'))]",
-      "[concat(uniqueString(concat(resourceGroup().id, variables('newStorageAccountSuffix'), '3')), variables('newStorageAccountSuffix'))]",
-      "[concat(uniqueString(concat(resourceGroup().id, variables('newStorageAccountSuffix'), '4')), variables('newStorageAccountSuffix'))]"
-    ],
-    "vhdContainerName": "[concat(variables('namingInfix'), 'vhd')]",
-    "osDiskName": "[concat(variables('namingInfix'), 'osdisk')]",
-    "addressPrefix": "10.0.0.0/16",
-    "subnetPrefix": "10.0.0.0/24",
-    "virtualNetworkName": "[concat(variables('namingInfix'), 'vnet')]",
-    "publicIPAddressName": "[concat(variables('namingInfix'), 'pip')]",
+    "addressPrefix": "10.128.13.0/25",
+    "subnetPrefix": "10.128.13.0/25",
+    "virtualNetworkName": "vmss-dev",
+    "publicIPAddressName": "vmss_pip",
     "subnetName": "[concat(variables('namingInfix'), 'subnet')]",
     "loadBalancerName": "[concat(variables('namingInfix'), 'lb')]",
     "publicIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]",
@@ -86,7 +74,6 @@
       "version": "latest"
     },
     "imageReference": "[variables('osType')]",
-    "diagnosticsStorageAccountName": "[variables('uniqueStringArray')[0]]",
     "ladMetricsResourceId": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', variables('namingInfix'))]",
     "install_apacheScriptFolder": "CustomScripts",
     "install_apacheScriptFileName": "install_apache.sh"
@@ -103,14 +90,24 @@
       "properties": {
         "addressSpace": {
           "addressPrefixes": [
-            "[variables('addressPrefix')]"
+            "10.128.13.0/25",
+            "10.128.63.80/29"
           ]
         },
         "subnets": [
           {
-            "name": "[variables('subnetName')]",
+            "name": "default",
             "properties": {
-              "addressPrefix": "[variables('subnetPrefix')]",
+              "addressPrefix": "10.128.13.0/25",
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('netsecuritygrp'))]"
+              }
+            }
+          },
+          {
+            "name": "GatewaySubnet",
+            "properties": {
+              "addressPrefix": "10.128.63.80/29",
               "networkSecurityGroup": {
                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('netsecuritygrp'))]"
               }
@@ -123,23 +120,6 @@
       ]
     },
     {
-      "type": "Microsoft.Storage/storageAccounts",
-      "name": "[variables('uniqueStringArray')[copyIndex()]]",
-      "location": "[variables('location')]",
-      "apiVersion": "2016-01-01",
-      "tags": {
-        "displayName": "StorageAccounts"
-      },
-      "copy": {
-        "name": "storageLoop",
-        "count": "[length(variables('uniqueStringArray'))]"
-      },
-      "sku": {
-        "name": "[variables('storageAccountType')]"
-      },
-      "kind": "Storage"
-    },
-    {
       "type": "Microsoft.Network/publicIPAddresses",
       "name": "[variables('publicIPAddressName')]",
       "location": "[variables('location')]",
@@ -148,7 +128,7 @@
         "displayName": "PublicIP"
       },
       "properties": {
-        "publicIPAllocationMethod": "Dynamic",
+        "publicIPAllocationMethod": "Static",
         "dnsSettings": {
           "domainNameLabel": "[variables('longNamingInfix')]"
         }
@@ -276,7 +256,6 @@
         "displayName": "VMScaleSet"
       },
       "dependsOn": [
-        "storageLoop",
         "[variables('lbID')]",
         "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]"
       ],
@@ -293,16 +272,11 @@
         "virtualMachineProfile": {
           "storageProfile": {
             "osDisk": {
-              "vhdContainers": [
-                "[concat(reference(resourceId('Microsoft.Storage/storageAccounts', variables('uniqueStringArray')[0]), '2016-01-01').primaryEndpoints.blob, variables('vhdContainerName'))]",
-                "[concat(reference(resourceId('Microsoft.Storage/storageAccounts', variables('uniqueStringArray')[1]), '2016-01-01').primaryEndpoints.blob, variables('vhdContainerName'))]",
-                "[concat(reference(resourceId('Microsoft.Storage/storageAccounts', variables('uniqueStringArray')[2]), '2016-01-01').primaryEndpoints.blob, variables('vhdContainerName'))]",
-                "[concat(reference(resourceId('Microsoft.Storage/storageAccounts', variables('uniqueStringArray')[3]), '2016-01-01').primaryEndpoints.blob, variables('vhdContainerName'))]",
-                "[concat(reference(resourceId('Microsoft.Storage/storageAccounts', variables('uniqueStringArray')[4]), '2016-01-01').primaryEndpoints.blob, variables('vhdContainerName'))]"
-              ],
-              "name": "[variables('osDiskName')]",
-              "caching": "ReadOnly",
-              "createOption": "FromImage"
+              "createOption": "FromImage",
+              "caching": "ReadWrite",
+              "managedDisk": {
+                "storageAccountType": "Premium_LRS"
+              }
             },
             "imageReference": "[variables('imageReference')]"
           },
@@ -598,10 +572,6 @@
                         }
                       }
                     }
-                  },
-                  "protectedSettings": {
-                    "storageAccountName": "[variables('diagnosticsStorageAccountName')]",
-                    "storageAccountKey": "[listkeys(resourceId('Microsoft.Storage/storageAccounts', variables('diagnosticsStorageAccountName')), '2016-01-01').keys[0].value]"
                   }
                 }
               },
@@ -614,9 +584,13 @@
                   "autoUpgradeMinorVersion": true,
                   "settings": {
                     "fileUris": [
-                      "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/apache2-on-ubuntu-vm/install_apache.sh"
+                      "https://qmidevops.blob.core.windows.net/devopsscripts/install_apache.sh"
                     ],
-                    "commandToExecute": "sh install_apache.sh"
+                    "commandToExecute": "bash install_apache.sh",
+                    "protectedSettings": {
+                      "storageAccountName": "qmidevops",
+                      "storageAccountKey": "SDWy9l34njEB7Ela6ZKLBnOosFkqzrDzW21huH4dPEfM/7MmuerG0kpv5ORb/eYm7Xj4g3OvcE3aSDcRSN5L8Q=="
+                    }
                   }
                 }
               }

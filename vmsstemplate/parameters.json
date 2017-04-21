@@ -3,16 +3,16 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "vmssName": {
-      "value": null
+      "value": "adaggregatorwww"
     },
     "instanceCount": {
-      "value": null
+      "value": 1
     },
     "adminUsername": {
-      "value": null
+      "value": "azureuser"
     },
     "adminPassword": {
-      "value": null
+      "value": "Qu3b3c0r!"
     }
   }
 }

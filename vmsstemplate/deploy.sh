@@ -8,10 +8,10 @@ IFS=$'\n\t'
 
 usage() { echo "Usage: $0 -i <subscriptionId> -g <resourceGroupName> -n <deploymentName> -l <resourceGroupLocation>" 1>&2; exit 1; }
 
-declare subscriptionId=""
-declare resourceGroupName=""
-declare deploymentName=""
-declare resourceGroupLocation=""
+declare subscriptionId="ed616da1-72f8-48bd-a10d-8550c6645f79"
+declare resourceGroupName="ad_aggregator"
+declare deploymentName="ad_aggregator"
+declare resourceGroupLocation="eastus"
 
 # Initialize parameters specified from command line
 while getopts ":i:g:n:l:" arg; do
@@ -90,21 +90,12 @@ az account set --subscription $subscriptionId
 
 set +e
 
-set +e
-
-#Check for existing RG
-az group show $resourceGroupName 1> /dev/null
-
-if [ $? != 0 ]; then
-	echo "Resource group with name" $resourceGroupName "could not be found. Creating new resource group.."
-	set -e
-	(
-		set -x
-		az group create --name $resourceGroupName --location $resourceGroupLocation 1> /dev/null
-	)
-	else
-	echo "Using existing resource group..."
-fi
+echo "Creating new resource group.."
+set -e
+(
+    set -x
+    az group create --name $resourceGroupName --location $resourceGroupLocation 1> /dev/null
+)
 
 #Start deployment
 echo "Starting deployment..."
