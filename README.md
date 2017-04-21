@@ -22,3 +22,5 @@ __to deploy this template:__
 - [On MSDN](https://blogs.msdn.microsoft.com/azuredev/tag/arm-template/)
 
 
+## Convert to Managed Disk
+[Convert Os Disk to Maanaged Disk](https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-convert-template-to-md)
