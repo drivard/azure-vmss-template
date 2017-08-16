@@ -21,9 +21,13 @@
       "type": "string",
       "metadata": {
         "description": "DNS name used for public IP addresses and as base for naming other resources. Must be globally unique and 3 to 61 characters long."
-      },
-      "minLength": 3,
-      "maxLength": 61
+      }
+    },
+    "dnslabel": {
+      "type": "string",
+      "metadata": {
+        "description": "DNS name used for public IP addresses and as base for naming other resources. Must be globally unique and 3 to 61 characters long."
+      }
     },
     "instanceCount": {
       "type": "int",
@@ -45,16 +49,30 @@
       "metadata": {
         "description": "Administrator password on all VMs"
       }
+    },
+    "existingdiagnosticsStorageAccountName":{
+      "type": "string",
+       "metadata": {
+         "description": "The name of an existing storage account to which diagnostics data will be transferred."
+       }
+    },
+    "existingdiagnosticsStorageResourceGroup": {
+      "type": "string",
+      "metadata": {
+        "description": "The resource group for the storage account specified in existingdiagnosticsStorageAccountName"
+      }
     }
   },
   "variables": {
     "location": "[resourceGroup().location]",
+    "storageAccountType": "Standard_LRS",
     "namingInfix": "[toLower(substring(concat(parameters('vmssName'), uniqueString(resourceGroup().id)), 0, 9))]",
     "longNamingInfix": "[toLower(parameters('vmssName'))]",
-    "addressPrefix": "10.128.13.0/25",
-    "subnetPrefix": "10.128.13.0/25",
-    "virtualNetworkName": "vmss-dev",
-    "publicIPAddressName": "vmss_pip",
+    "addressPrefix": "10.128.15.0/25",
+    "subnetPrefix": "10.128.15.0/25",
+    "virtualNetworkName": "[concat(variables('namingInfix'), 'vnet')]",
+    "publicIPAddressName": "[concat(variables('namingInfix'), 'pip')]",
+    "publicPIPName": "[toLower(parameters('dnslabel'))]",
     "subnetName": "[concat(variables('namingInfix'), 'subnet')]",
     "loadBalancerName": "[concat(variables('namingInfix'), 'lb')]",
     "publicIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]",
@@ -76,7 +94,8 @@
     "imageReference": "[variables('osType')]",
     "ladMetricsResourceId": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', variables('namingInfix'))]",
     "install_apacheScriptFolder": "CustomScripts",
-    "install_apacheScriptFileName": "install_apache.sh"
+    "install_apacheScriptFileName": "install_apache.sh",
+     "apiversion-storage":"2015-06-15"
   },
   "resources": [
     {
@@ -87,27 +106,17 @@
       "tags": {
         "displayName": "VirtualNetwork"
       },
-      "properties": {
+       "properties": {
         "addressSpace": {
           "addressPrefixes": [
-            "10.128.13.0/25",
-            "10.128.63.80/29"
+            "[variables('addressPrefix')]"
           ]
         },
         "subnets": [
           {
-            "name": "default",
+            "name": "[variables('subnetName')]",
             "properties": {
-              "addressPrefix": "10.128.13.0/25",
-              "networkSecurityGroup": {
-                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('netsecuritygrp'))]"
-              }
-            }
-          },
-          {
-            "name": "GatewaySubnet",
-            "properties": {
-              "addressPrefix": "10.128.63.80/29",
+              "addressPrefix": "[variables('subnetPrefix')]",
               "networkSecurityGroup": {
                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('netsecuritygrp'))]"
               }
@@ -130,7 +139,7 @@
       "properties": {
         "publicIPAllocationMethod": "Static",
         "dnsSettings": {
-          "domainNameLabel": "[variables('longNamingInfix')]"
+          "domainNameLabel": "[variables('publicPIPName')]"
         }
       }
     },
@@ -251,7 +260,7 @@
       "type": "Microsoft.Compute/virtualMachineScaleSets",
       "name": "[variables('namingInfix')]",
       "location": "[variables('location')]",
-      "apiVersion": "2016-03-30",
+      "apiVersion": "2016-04-30-preview",
       "tags": {
         "displayName": "VMScaleSet"
       },
@@ -576,7 +585,7 @@
                 }
               },
               {
-                "name": "install_apache",
+                "name": "install_puppet",
                 "properties": {
                   "publisher": "Microsoft.OSTCExtensions",
                   "type": "CustomScriptForLinux",
@@ -584,13 +593,11 @@
                   "autoUpgradeMinorVersion": true,
                   "settings": {
                     "fileUris": [
-                      "https://qmidevops.blob.core.windows.net/devopsscripts/install_apache.sh"
+                      "https://elephantqc.blob.core.windows.net/devops/install_puppet.sh"
                     ],
-                    "commandToExecute": "bash install_apache.sh",
-                    "protectedSettings": {
-                      "storageAccountName": "qmidevops",
-                      "storageAccountKey": "SDWy9l34njEB7Ela6ZKLBnOosFkqzrDzW21huH4dPEfM/7MmuerG0kpv5ORb/eYm7Xj4g3OvcE3aSDcRSN5L8Q=="
-                    }
+                    "commandToExecute": "bash install_puppet.sh",
+                    "storageAccountName": "qmidevops",
+                    "storageAccountKey": "SDWy9l34njEB7Ela6ZKLBnOosFkqzrDzW21huH4dPEfM/7MmuerG0kpv5ORb/eYm7Xj4g3OvcE3aSDcRSN5L8Q=="
                   }
                 }
               }

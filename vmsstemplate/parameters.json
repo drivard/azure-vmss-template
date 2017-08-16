@@ -3,7 +3,7 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "vmssName": {
-      "value": "adaggregatorwww"
+      "value": "elephantqc"
     },
     "instanceCount": {
       "value": 1
@@ -13,6 +13,15 @@
     },
     "adminPassword": {
       "value": "Qu3b3c0r!"
+    },
+    "dnslabel": {
+      "value": "elephantqcdev"
+    },
+    "existingdiagnosticsStorageAccountName": {
+      "value": "elephantqc"
+    },
+    "existingdiagnosticsStorageResourceGroup": {
+      "value": "elephant_dev"
     }
   }
 }

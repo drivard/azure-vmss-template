@@ -8,10 +8,10 @@ IFS=$'\n\t'
 
 usage() { echo "Usage: $0 -i <subscriptionId> -g <resourceGroupName> -n <deploymentName> -l <resourceGroupLocation>" 1>&2; exit 1; }
 
-declare subscriptionId=""
-declare resourceGroupName=""
-declare deploymentName=""
-declare resourceGroupLocation=""
+declare subscriptionId="9fe8abb7-f5c1-40d7-83a1-d77b9406af63"
+declare resourceGroupName="elephant_dev"
+declare deploymentName="elephant-vmss"
+declare resourceGroupLocation="eastus"
 
 # Initialize parameters specified from command line
 while getopts ":i:g:n:l:" arg; do
